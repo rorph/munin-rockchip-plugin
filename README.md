@@ -3,6 +3,7 @@
 ```
 cp rockchip_ /usr/share/munin/plugins/
 chmod +x /usr/share/munin/plugins/rockchip_
+ln -s /usr/share/munin/plugins/rockchip_ /etc/munin/plugins/rockchip_
 ```
 
 Add:
@@ -10,7 +11,6 @@ Add:
 ```
 [rockchip_*]
 user root
-
 ```
 
 to your `/etc/munin/plugin-conf.d/munin-node`
