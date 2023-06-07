@@ -76,12 +76,12 @@ if [ -f "/sys/kernel/debug/rkrga/load" ] ; then
     done
 fi
 
-if [ -f "/sys/devices/platform/dmc/devfreq/dmc/load" ] ; then
-    if [ "$IS_CONFIG" == "1" ] ; then
-        echo "dmc.label dmc"
-    fi
-    echo "dmc.value $(cat /sys/devices/platform/dmc/devfreq/dmc/load | cut -d'@' -f1)"
-fi
+#if [ -f "/sys/devices/platform/dmc/devfreq/dmc/load" ] ; then
+#    if [ "$IS_CONFIG" == "1" ] ; then
+#        echo "dmc.label dmc"
+#    fi
+#    echo "dmc.value $(cat /sys/devices/platform/dmc/devfreq/dmc/load | cut -d'@' -f1)"
+#fi
 
 if [ "$(ls --color=never -1 /sys/class/devfreq/ | grep -c \.gpu)" -gt "0" ] ; then
     IN=$(cat /sys/class/devfreq/*.gpu/load | cut -d'@' -f1)
