@@ -1,0 +1,96 @@
+#!/bin/bash
+
+: << =cut
+
+=head1 NAME
+
+rockchip - Script to monitor rockchip internals
+
+=head1 CONFIGURATION
+
+This plugin needs to run as root to collect all stats, add to your /etc/munin/plugin-conf.d/munin-node:
+
+[rockchip_*]
+user root
+
+=head1 AUTHOR
+
+rod@cvedia.com
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+IS_CONFIG=0
+if [ "$1" = "config" ] ; then
+    IS_CONFIG=1
+fi
+
+if [ "$IS_CONFIG" == "1" ] ; then
+    echo 'graph_title RockChip internals'
+    echo 'graph_args --upper-limit 100 -l 0'
+    echo 'graph_vlabel %'
+    echo 'graph_category system'
+    echo 'graph_scale no'
+fi
+
+if [ -f "/sys/kernel/debug/rknpu/load" ] ; then
+    # multiple npus
+    if [ "$(cat /sys/kernel/debug/rknpu/load | grep -ic core)" -gt "0" ] ; then
+        IN=$(cat /sys/kernel/debug/rknpu/load)
+        sIFS=$IFS
+        IFS=','
+        X=0
+        for e in $IN; do
+            V=$(echo $e | tr -d ' ' | rev | cut -d':' -f1 | rev | cut -d'%' -f1)
+            if [ "$IS_CONFIG" == "1" ] ; then
+                echo "npu${X}.label npu${X}"
+            fi
+            echo "npu${X}.value ${V}"
+            X=$((X + 1))
+        done
+        IFS=$sIFS
+    
+    # single npu
+    else
+        if [ "$IS_CONFIG" == "1" ] ; then
+            echo "npu.label npu0"
+        fi
+        echo "npu.value $(cat /sys/kernel/debug/rknpu/load | rev | cut -d' ' -f1 | rev | cut -d'%' -f1)"
+    fi
+fi
+
+if [ -f "/sys/kernel/debug/rkrga/load" ] ; then
+    IN=$(cat /sys/kernel/debug/rkrga/load | grep 'scheduler\[' | cut -d':' -f2- | tr -d ' ')
+    LD=$(cat /sys/kernel/debug/rkrga/load | grep 'load = ' | cut -d'=' -f2- | tr -d ' \n')
+    X=1
+    for e in $IN; do
+        if [ "$IS_CONFIG" == "1" ] ; then
+            echo "${e}.label ${e}"
+        fi
+        echo "${e}.value $(echo $LD | cut -d'%' -f${X})"
+        X=$((X + 1))
+    done
+fi
+
+if [ -f "/sys/devices/platform/dmc/devfreq/dmc/load" ] ; then
+    if [ "$IS_CONFIG" == "1" ] ; then
+        echo "dmc.label dmc"
+    fi
+    echo "dmc.value $(cat /sys/devices/platform/dmc/devfreq/dmc/load | cut -d'@' -f1)"
+fi
+
+if [ "$(ls --color=never -1 /sys/class/devfreq/ | grep -c \.gpu)" -gt "0" ] ; then
+    IN=$(cat /sys/class/devfreq/*.gpu/load | cut -d'@' -f1)
+    X=0
+    for e in $IN; do
+        if [ "$IS_CONFIG" == "1" ] ; then
+            echo "gpu${X}.label gpu${X}"
+        fi
+        echo "gpu${X}.value ${e}"
+        X=$((X + 1))
+    done
+fi
